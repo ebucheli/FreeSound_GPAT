@@ -9,13 +9,11 @@ import pandas as pd
 import os
 
 path_ds = '/home/edoardobucheli/Datasets/freesound-audio-tagging-2019/'
-path_train_curated = os.path.join(path_ds,'train_curated')
-df_train = pd.read_csv(os.path.join(path_ds,'train_curated.csv'))
+#path_train_curated = os.path.join(path_ds,'train_curated')
+#df_train = pd.read_csv(os.path.join(path_ds,'train_curated.csv'))
 
 batch_size = 64
 sr=44100
-
-
 
 def preprocess_wave(file):
 
@@ -88,9 +86,18 @@ def create_and_batch_dataset_freesound(path_ds, part='curated', batch_size=32, s
         path_ds = os.path.join(path_ds,'train_curated')
 
         names = df['fname'].tolist()
-        names_paths = [os.path.join(path_train_curated,f) for f in names]
+        names_paths = [os.path.join(path_ds,f) for f in names]
+        print(len(names))
+        labels = df['labels'].tolist()
 
-        labels = df_train['labels'].tolist()
+    elif part == 'noisy':
+        df = pd.read_csv(os.path.join(path_ds,'train_noisy.csv'))
+        path_ds = os.path.join(path_ds,'train_noisy')
+
+        names = df['fname'].tolist()
+        names_paths = [os.path.join(path_ds,f) for f in names]
+        print(len(names))
+        labels = df['labels'].tolist()
 
     wave_path_ds = tf.data.Dataset.from_tensor_slices(names_paths)
     wave_ds = wave_path_ds.map(load_and_preprocess_wav)
