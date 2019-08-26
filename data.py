@@ -209,3 +209,54 @@ def create_and_batch_dataset_freesound(path_ds, part='curated',
     wave_label_ds = wave_label_ds.batch(batch_size)
 
     return wave_label_ds
+
+def create_and_batch_dataset_TFSSC(path_ds, part='train',
+                                   batch_size=64,
+                                   transformation = 'mag',
+                                   normalize = True,
+                                   sr=16000,
+                                   len_sec=1,
+                                   frame_length=256,
+                                   frame_step = 256,
+                                   fft_length = 256,
+                                   n_mels = 40,
+                                   n_mfcc = 40,
+                                   mel_lower_edge=125,
+                                   mel_upper_edge=8000):
+
+    if part == 'train':
+        #df = pd.read_csv(os.path.join(path_ds,'train_curated.csv'))
+        #path_ds = os.path.join(path_ds,'')
+
+        dirs = [f for f in os.listdir(path_ds) if isdir(join(path_ds, f))]
+        dirs.sort()
+
+        path_ds = os.path.join(path_ds,'train_curated')
+
+        names = df['fname'].tolist()
+        names_paths = [os.path.join(path_ds,f) for f in names]
+        print(len(names))
+        labels = df['labels'].tolist()
+
+    wave_path_ds = tf.data.Dataset.from_tensor_slices(names_paths)
+    label_ds = tf.data.Dataset.from_tensor_slices(labels)
+
+    load_and_preprocess_rep = lambda _file: load_and_preprocess_wav(_file,
+                                            transformation,
+                                            normalize,
+                                            sr,
+                                            len_sec,
+                                            frame_length,
+                                            frame_step,
+                                            fft_length,
+                                            n_mels,
+                                            n_mfcc,
+                                            mel_lower_edge,
+                                            mel_upper_edge)
+
+    wave_ds = wave_path_ds.map(load_and_preprocess_rep)
+
+    wave_label_ds = tf.data.Dataset.zip((wave_ds,label_ds))
+    wave_label_ds = wave_label_ds.batch(batch_size)
+
+    return wave_label_ds
