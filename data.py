@@ -8,6 +8,8 @@ import librosa.display
 import pandas as pd
 import os
 
+from random import shuffle
+
 path_ds = '/home/edoardobucheli/Datasets/freesound-audio-tagging-2019/'
 #path_train_curated = os.path.join(path_ds,'train_curated')
 #df_train = pd.read_csv(os.path.join(path_ds,'train_curated.csv'))
@@ -225,18 +227,31 @@ def create_and_batch_dataset_TFSSC(path_ds, part='train',
                                    mel_upper_edge=8000):
 
     if part == 'train':
-        #df = pd.read_csv(os.path.join(path_ds,'train_curated.csv'))
-        #path_ds = os.path.join(path_ds,'')
 
-        dirs = [f for f in os.listdir(path_ds) if isdir(join(path_ds, f))]
-        dirs.sort()
+        with open(os.path.join(path_ds,'Partitions/10Words/training_files.txt'),'r') as f:
+            names = f.read().splitlines()
 
-        path_ds = os.path.join(path_ds,'train_curated')
+        shuffle(names)
 
-        names = df['fname'].tolist()
-        names_paths = [os.path.join(path_ds,f) for f in names]
-        print(len(names))
-        labels = df['labels'].tolist()
+        names_paths = [os.path.join(path_ds,'audio',f) for f in names]
+        print('Found {} files in partition'.format(len(names)))
+        labels = [f.split('/')[0] for f in names]
+
+    elif part == 'validation':
+        with open(os.path.join(path_ds,'Partitions/10Words/validation_files.txt'),'r') as f:
+            names = f.read().splitlines()
+        shuffle(names)
+        names_paths = [os.path.join(path_ds,'audio',f) for f in names]
+        print('Found {} files in partition'.format(len(names)))
+        labels = [f.split('/')[0] for f in names]
+
+    elif part == 'test':
+        with open(os.path.join(path_ds,'Partitions/10Words/testing_files.txt'),'r') as f:
+            names = f.read().splitlines()
+        shuffle(names)
+        names_paths = [os.path.join(path_ds,'audio',f) for f in names]
+        print('Found {} files in partition'.format(len(names)))
+        labels = [f.split('/')[0] for f in names]
 
     wave_path_ds = tf.data.Dataset.from_tensor_slices(names_paths)
     label_ds = tf.data.Dataset.from_tensor_slices(labels)
@@ -258,5 +273,6 @@ def create_and_batch_dataset_TFSSC(path_ds, part='train',
 
     wave_label_ds = tf.data.Dataset.zip((wave_ds,label_ds))
     wave_label_ds = wave_label_ds.batch(batch_size)
+    #wave_label_ds = wave_label_ds.shuffle(len(labels))
 
     return wave_label_ds
