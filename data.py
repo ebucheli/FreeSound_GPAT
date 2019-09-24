@@ -226,6 +226,18 @@ def create_and_batch_dataset_TFSSC(path_ds, part='train',
                                    mel_lower_edge=125,
                                    mel_upper_edge=8000):
 
+
+    word_to_label = {'yes':0,'no':1,'up':2,'down':3,'left':4,'right':5,
+                 'on':6,'off':7,'stop':8,'go':9,
+                 'backward':10, 'bed':10,'bird':10,'cat':10,'dog':10,
+                 'follow':10,'forward':10,'happy':10,'house':10,'learn':10,
+                 'marvin':10,'sheila':10,'tree':10,'visual':10,'wow':10,
+                 'zero':10,'one':10,'two':10,'three':10,'four':10,
+                 'five':10,'six':10,'seven':10,'eight':10,'nine':10}
+
+    label_to_word = dict([[v,k] for k,v in word_to_label.items()])
+    label_to_word[10] = '<unk>'
+
     if part == 'train':
 
         with open(os.path.join(path_ds,'Partitions/10Words/training_files.txt'),'r') as f:
@@ -253,8 +265,10 @@ def create_and_batch_dataset_TFSSC(path_ds, part='train',
         print('Found {} files in partition'.format(len(names)))
         labels = [f.split('/')[0] for f in names]
 
+    labels_int = [word_to_label[f] for f in labels]
+
     wave_path_ds = tf.data.Dataset.from_tensor_slices(names_paths)
-    label_ds = tf.data.Dataset.from_tensor_slices(labels)
+    label_ds = tf.data.Dataset.from_tensor_slices(labels_int)
 
     load_and_preprocess_rep = lambda _file: load_and_preprocess_wav(_file,
                                             transformation,
@@ -273,6 +287,7 @@ def create_and_batch_dataset_TFSSC(path_ds, part='train',
 
     wave_label_ds = tf.data.Dataset.zip((wave_ds,label_ds))
     wave_label_ds = wave_label_ds.batch(batch_size)
+    wave_label_ds = wave_label_ds.prefetch(buffer_size = 1024)
     #wave_label_ds = wave_label_ds.shuffle(len(labels))
 
     return wave_label_ds
