@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import pandas as pd
 from tqdm import tqdm
+from copy import deepcopy
 
 import os
 import pickle
@@ -189,10 +190,14 @@ def train_model(args):
                                             validation_data = val_generator,
                                             callbacks = callbacks_list)
 
-    #log['acc_history'] = history_callback.history['acc']
-    #log['val_acc_history'] = history_callback.history['val_acc']
-    #log['loss_history'] = history_callback.history['loss']
-    #log['val_loss_history'] = history_callback.history['val_loss']
+    print('\n\nDone Training! Preparing Test\n\n')
+
+    log2 = deepcopy(log)
+
+    log2['acc_history'] = history_callback.history['acc']
+    log2['val_acc_history'] = history_callback.history['val_acc']
+    log2['loss_history'] = history_callback.history['loss']
+    log2['val_loss_history'] = history_callback.history['val_loss']
 
     model.load_weights(best_filepath)
 
@@ -208,18 +213,26 @@ def train_model(args):
     y_scores = model.predict(test_me)
     y_hat = np.argmax(y_scores,axis = 1)
 
-    #log['y_scores'] = y_scores
-    #log['y_hat'] = y_hat
+    log2['y_scores'] = y_scores
+    log2['y_hat'] = y_hat
+    log2['test_loss'] = test_loss
+    log2['test_acc'] = test_acc
+
     log['test_loss'] = test_loss
     log['test_acc'] = test_acc
     #print(y_hat)
 
+    print(log)
+
     version = 0
-    while os.path.exists('./txt_logs/{}[{}].txt'.format(experiment_name,version)):
+    while os.path.exists('./outputs/txt_logs/{}[{}].txt'.format(experiment_name,version)):
         version += 1
 
-    with open('./txt_logs/{}[{}].txt'.format(experiment_name,version), 'w') as f:
+    with open('./outputs/txt_logs/{}[{}].txt'.format(experiment_name,version), 'w') as f:
         f.write(json.dumps(log, indent=4, separators=(',', ':')))
+
+    with open('./outputs/pickle_logs/{}[{}].p'.format(experiment_name,version),'wb') as fp:
+        pickle.dump(log2,fp)
 
     my_labels = list(mc_new_label_mapping.keys())
 
@@ -227,10 +240,10 @@ def train_model(args):
     labels.append('Unknown')
 
     plot_cm(new_labels_test,y_hat,figsize = (7,7), labels = labels)
-    plt.savefig('./confusion_matrices/{}[{}].eps'.format(experiment_name,version))
+    plt.savefig('./outputs/confusion_matrices/{}[{}].eps'.format(experiment_name,version))
     #plt.show()
-    
-    model.save_weights('./weights/{}[{}].h5'.format(experiment_name,version))
+
+    model.save_weights('./outputs/weights/{}[{}].h5'.format(experiment_name,version))
     del(model)
 
 if __name__ == '__main__':

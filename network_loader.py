@@ -1,9 +1,9 @@
 import tensorflow as tf
 import numpy as np
 
-from CNNetworks2D import malley_cnn_80, malley_cnn_120
-from CNNetworks1D import conv1d_v1
-from RNNetworks import AttRNNSpeechModel
+from networks.CNNetworks2D import malley_cnn_80, malley_cnn_120
+from networks.CNNetworks1D import conv1d_v1
+from networks.RNNetworks import AttRNNSpeechModel
 
 def load_network(network,input_shape,n_classes,lr,weights = None, new_head = False, train_only_head = False):
 
