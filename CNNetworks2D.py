@@ -57,7 +57,7 @@ def malley_cnn_80(input_shape, n_classes):
     X = Conv2D(512,[1,7],padding = 'same')(X)
     X = Activation('relu')(X)
 
-    X = GlobalMaxPool2D()(X)
+    X = GlobalMaxPool2D(name = 'cut_here')(X)
 
     X = Dense(512,activation = 'relu')(X)
     X = Dropout(0.5)(X)
@@ -89,7 +89,7 @@ def malley_cnn_120(input_shape, n_classes):
     X = Conv2D(512,[1,7],padding = 'same')(X)
     X = Activation('relu')(X)
 
-    X = GlobalMaxPool2D()(X)
+    X = GlobalMaxPool2D(name = 'cut_here')(X)
 
     X = Dense(512,activation = 'relu')(X)
     X = Dropout(0.5)(X)

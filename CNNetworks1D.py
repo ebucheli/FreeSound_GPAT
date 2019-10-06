@@ -30,7 +30,7 @@ def conv1d_v1(input_shape,n_classes):
 
     X = Conv1D(256,3,activation=relu,padding='valid')(X)
     X = Conv1D(256,3,activation=relu,padding='valid')(X)
-    X = GlobalMaxPool1D()(X)
+    X = GlobalMaxPool1D(name = 'cut_here')(X)
 
     X = Dense(64,activation=relu)(X)
     X = Dense(128,activation=relu)(X)
