@@ -102,13 +102,13 @@ def train_model(args):
     frames = int(np.ceil(file_length/hop_length))
 
     if representation == 'WF':
-        experiment_name = '{}-{}-{}'.format(network,sample_rate,representation)
+        experiment_name = '{}-C{}-{}-{}'.format(network,cluster,sample_rate,representation)
 
         pickle_train = './preprocessed_train/{}-{}-64k'.format(representation,sample_rate)
         pickle_test = './preprocessed_test/{}-{}-64k'.format(representation,sample_rate)
         input_shape = [file_length,]
     else:
-        experiment_name = '{}-{}-{}-{}-HL{}'.format(network,sample_rate,representation,freq_res,hop_length)
+        experiment_name = '{}-C{}-{}-{}-{}-HL{}'.format(network,cluster,sample_rate,representation,freq_res,hop_length)
 
         pickle_train = './preprocessed_train/{}-{}-HL{}-WF{}-64k'.format(representation,
                                                                          freq_res,hop_length,
@@ -181,9 +181,17 @@ def train_model(args):
 
     # Train Model
 
-    best_filepath = './weights_best.h5'
-    checkpoint = ModelCheckpoint(best_filepath,monitor='val_acc',verbose = 1,
-                                 save_best_only=True, mode='max')
+    version = 0
+    while os.path.exists('./outputs/txt_logs/{}[{}].txt'.format(experiment_name,version)):
+        version += 1
+
+    best_filepath = './outputs/best_weights/{}[{}].h5'.format(experiment_name,version)
+    checkpoint = ModelCheckpoint(best_filepath,
+                                 monitor='val_acc',
+                                 verbose = 1,
+                                 save_best_only=True,
+                                 save_weights_only = True,
+                                 mode='max')
     callbacks_list = [checkpoint]
 
     history_callback = model.fit_generator(train_generator,epochs = epochs,
@@ -222,12 +230,6 @@ def train_model(args):
     log['test_acc'] = test_acc
     #print(y_hat)
 
-    print(log)
-
-    version = 0
-    while os.path.exists('./outputs/txt_logs/{}[{}].txt'.format(experiment_name,version)):
-        version += 1
-
     with open('./outputs/txt_logs/{}[{}].txt'.format(experiment_name,version), 'w') as f:
         f.write(json.dumps(log, indent=4, separators=(',', ':')))
 
@@ -239,7 +241,7 @@ def train_model(args):
     labels = [num_to_label[f] for f in my_labels]
     labels.append('Unknown')
 
-    plot_cm(new_labels_test,y_hat,figsize = (7,7), labels = labels)
+    plot_cm(new_labels_test,y_hat,figsize = (15,15), labels = labels)
     plt.savefig('./outputs/confusion_matrices/{}[{}].eps'.format(experiment_name,version))
     #plt.show()
 
