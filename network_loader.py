@@ -3,7 +3,7 @@ import numpy as np
 
 from networks.CNNetworks2D import malley_cnn_80, malley_cnn_120
 from networks.CNNetworks1D import conv1d_v1
-from networks.RNNetworks import AttRNNSpeechModel
+from networks.RNNetworks import AttRNNSpeechModel, AttRNNSpeechModelWave
 
 def load_network(network,input_shape,n_classes,lr,weights = None, new_head = False, train_only_head = False):
 
@@ -17,6 +17,9 @@ def load_network(network,input_shape,n_classes,lr,weights = None, new_head = Fal
                 model = malley_cnn_80(input_shape,41)
 
             elif input_shape[0] == 120:
+                model = malley_cnn_120(input_shape,41)
+
+            elif input_shape[0] == 257:
                 model = malley_cnn_120(input_shape,41)
 
             model.load_weights(weights)
@@ -41,6 +44,9 @@ def load_network(network,input_shape,n_classes,lr,weights = None, new_head = Fal
                 model = malley_cnn_80(input_shape,n_classes)
 
             elif input_shape[0] == 120:
+                model = malley_cnn_120(input_shape,n_classes)
+
+            elif input_shape[0] == 257:
                 model = malley_cnn_120(input_shape,n_classes)
 
             if weights is not None:
@@ -71,6 +77,13 @@ def load_network(network,input_shape,n_classes,lr,weights = None, new_head = Fal
     elif network == 'AttRNN2D':
 
         model = AttRNNSpeechModel(input_shape,n_classes)
+
+        if weights is not None:
+            model.load_weights(weights)
+
+    elif network == 'AttRNN1D':
+
+        model = AttRNNSpeechModelWave(input_shape, n_classes)
 
         if weights is not None:
             model.load_weights(weights)

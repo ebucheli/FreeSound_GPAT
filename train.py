@@ -188,7 +188,7 @@ def train_model(args):
     best_filepath = './outputs/best_weights/{}[{}].h5'.format(experiment_name,version)
     checkpoint = ModelCheckpoint(best_filepath,
                                  monitor='val_acc',
-                                 verbose = 1,
+                                 verbose = 0,
                                  save_best_only=True,
                                  save_weights_only = True,
                                  mode='max')
@@ -241,7 +241,12 @@ def train_model(args):
     labels = [num_to_label[f] for f in my_labels]
     labels.append('Unknown')
 
-    plot_cm(new_labels_test,y_hat,figsize = (15,15), labels = labels)
+    if cluster == 2:
+        xrotation = 90
+    else:
+        xrotation = 0
+
+    plot_cm(new_labels_test,y_hat,figsize = (15,15), labels = labels,xrotation = xrotation)
     plt.savefig('./outputs/confusion_matrices/{}[{}].eps'.format(experiment_name,version))
     #plt.show()
 
