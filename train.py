@@ -102,13 +102,21 @@ def train_model(args):
     frames = int(np.ceil(file_length/hop_length))
 
     if representation == 'WF':
-        experiment_name = '{}-C{}-{}-{}'.format(network,cluster,sample_rate,representation)
+
+        if problem == 'Cluster':
+            experiment_name = '{}-C{}-{}-{}'.format(network,cluster,sample_rate,representation)
+        elif problem == 'MC':
+            experiment_name = '{}-MC-{}-{}'.format(network,sample_rate,representation)
 
         pickle_train = './preprocessed_train/{}-{}-64k'.format(representation,sample_rate)
         pickle_test = './preprocessed_test/{}-{}-64k'.format(representation,sample_rate)
         input_shape = [file_length,]
     else:
-        experiment_name = '{}-C{}-{}-{}-{}-HL{}'.format(network,cluster,sample_rate,representation,freq_res,hop_length)
+
+        if problem == 'Cluster':
+            experiment_name = '{}-C{}-{}-{}-{}-HL{}'.format(network,cluster,sample_rate,representation,freq_res,hop_length)
+        elif problem == 'MC':
+            experiment_name = '{}-MC-{}-{}-{}-{}'.format(network,sample_rate,representation,freq_res,hop_length)
 
         pickle_train = './preprocessed_train/{}-{}-HL{}-WF{}-64k'.format(representation,
                                                                          freq_res,hop_length,
@@ -150,6 +158,21 @@ def train_model(args):
                              new_head = False,
                              train_only_head = False)
 
+    elif problem == 'MC':
+
+        x_train_2 = x_train
+        new_labels_train = meta_labels_all
+        x_test_2 = x_test
+        new_labels_test = meta_labels_test
+
+        model = load_network(network,
+                             input_shape,
+                             len(np.unique(new_labels_train)),
+                             lr,
+                             weights = pt_weights,
+                             new_head = False,
+                             train_only_head = False)
+
     model.compile(optimizer = Adam(lr), loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
 
     model.summary()
@@ -181,11 +204,23 @@ def train_model(args):
 
     # Train Model
 
-    version = 0
-    while os.path.exists('./outputs/txt_logs/{}[{}].txt'.format(experiment_name,version)):
-        version += 1
+    if problem == 'Cluster':
 
-    best_filepath = './outputs/best_weights/{}[{}].h5'.format(experiment_name,version)
+        version = 0
+        while os.path.exists('./outputs/txt_logs/{}[{}].txt'.format(experiment_name,version)):
+            version += 1
+
+        best_filepath = './outputs/best_weights/{}[{}].h5'.format(experiment_name,version)
+
+    elif problem == 'MC':
+
+        version = 0
+        while os.path.exists('./outputs_mc/txt_logs/{}[{}].txt'.format(experiment_name,version)):
+            version += 1
+
+        best_filepath = './outputs_mc/best_weights/{}[{}].h5'.format(experiment_name,version)
+
+
     checkpoint = ModelCheckpoint(best_filepath,
                                  monitor='val_acc',
                                  verbose = 0,
@@ -195,8 +230,8 @@ def train_model(args):
     callbacks_list = [checkpoint]
 
     history_callback = model.fit_generator(train_generator,epochs = epochs,
-                                            validation_data = val_generator,
-                                            callbacks = callbacks_list)
+                                           validation_data = val_generator,
+                                           callbacks = callbacks_list)
 
     print('\n\nDone Training! Preparing Test\n\n')
 
@@ -230,28 +265,55 @@ def train_model(args):
     log['test_acc'] = test_acc
     #print(y_hat)
 
-    with open('./outputs/txt_logs/{}[{}].txt'.format(experiment_name,version), 'w') as f:
-        f.write(json.dumps(log, indent=4, separators=(',', ':')))
+    if problem == 'Cluster':
 
-    with open('./outputs/pickle_logs/{}[{}].p'.format(experiment_name,version),'wb') as fp:
-        pickle.dump(log2,fp)
+        with open('./outputs/txt_logs/{}[{}].txt'.format(experiment_name,version), 'w') as f:
+            f.write(json.dumps(log, indent=4, separators=(',', ':')))
 
-    my_labels = list(mc_new_label_mapping.keys())
+        with open('./outputs/pickle_logs/{}[{}].p'.format(experiment_name,version),'wb') as fp:
+            pickle.dump(log2,fp)
 
-    labels = [num_to_label[f] for f in my_labels]
-    labels.append('Unknown')
+        my_labels = list(mc_new_label_mapping.keys())
 
-    if cluster == 2:
-        xrotation = 90
-    else:
-        xrotation = 0
+        labels = [num_to_label[f] for f in my_labels]
+        labels.append('Unknown')
 
-    plot_cm(new_labels_test,y_hat,figsize = (15,15), labels = labels,xrotation = xrotation)
-    plt.savefig('./outputs/confusion_matrices/{}[{}].eps'.format(experiment_name,version))
-    #plt.show()
+        if cluster == 2:
+            xrotation = 90
+        else:
+            xrotation = 0
 
-    model.save_weights('./outputs/weights/{}[{}].h5'.format(experiment_name,version))
-    del(model)
+        plot_cm(new_labels_test,y_hat,figsize = (15,15), labels = labels,xrotation = xrotation)
+        plt.savefig('./outputs/confusion_matrices/{}[{}].eps'.format(experiment_name,version))
+        #plt.show()
+
+        model.save_weights('./outputs/weights/{}[{}].h5'.format(experiment_name,version))
+        del(model)
+
+    elif problem == 'MC':
+        with open('./outputs_mc/txt_logs/{}[{}].txt'.format(experiment_name,version), 'w') as f:
+            f.write(json.dumps(log, indent=4, separators=(',', ':')))
+
+        with open('./outputs_mc/pickle_logs/{}[{}].p'.format(experiment_name,version),'wb') as fp:
+            pickle.dump(log2,fp)
+
+        #my_labels = list(mc_new_label_mapping.keys())
+
+        #labels = [num_to_label[f] for f in my_labels]
+        #labels.append('Unknown')
+
+        #if cluster == 2:
+        #    xrotation = 90
+        #else:
+        #    xrotation = 0
+
+        plot_cm(new_labels_test,y_hat,figsize = (15,15))
+        plt.savefig('./outputs_mc/confusion_matrices/{}[{}].eps'.format(experiment_name,version))
+        #plt.show()
+
+        model.save_weights('./outputs_mc/weights/{}[{}].h5'.format(experiment_name,version))
+        del(model)
+
 
 if __name__ == '__main__':
     train_model(args)
